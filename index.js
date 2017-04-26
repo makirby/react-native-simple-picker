@@ -1,7 +1,4 @@
-import React, {
-  Component,
-  PropTypes,
-} from 'react';
+import React, {Component} from 'react'
 
 import {
   StyleSheet,
@@ -9,137 +6,123 @@ import {
   TouchableOpacity,
   View,
   Modal,
-  PickerIOS,
-  Dimensions,
-} from 'react-native';
+  Picker,
+  Dimensions
+} from 'react-native'
 
-const PickerItemIOS = PickerIOS.Item;
-
-const SCREEN_WIDTH = Dimensions.get('window').width;
-
+const Item = Picker.Item
+const SCREEN_WIDTH = Dimensions.get('window').width
 const styles = StyleSheet.create({
   basicContainer: {
     flex: 1,
     justifyContent: 'flex-end',
-    alignItems: 'center',
+    alignItems: 'center'
   },
-
   modalContainer: {
     width: SCREEN_WIDTH,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 0,
-    backgroundColor: '#F5FCFF',
+    backgroundColor: '#F5FCFF'
   },
-
   buttonView: {
     width: SCREEN_WIDTH,
     padding: 8,
     borderTopWidth: 0.5,
     borderTopColor: 'lightgrey',
     justifyContent: 'space-between',
-    flexDirection: 'row',
+    flexDirection: 'row'
   },
-
   bottomPicker: {
-    width: SCREEN_WIDTH,
-  },
-});
+    width: SCREEN_WIDTH
+  }
+})
 
-const propTypes = {
-  buttonColor: PropTypes.string,
-  options: PropTypes.array.isRequired,
-  labels: PropTypes.array,
-  confirmText : PropTypes.string,
-  cancelText : PropTypes.string,
-  itemStyle: PropTypes.object,
-  onSubmit: PropTypes.func,
-};
+type Option = {
+  data?: any;
+  value: number | string;
+  label: string;
+}
+
+type Props = {
+  buttonColor: string,
+  options: Array<Option>;
+  confirmText: string;
+  cancelText: string;
+  itemStyle: Object;
+  onSubmit: (value: any) => void;
+}
 
 class SimplePicker extends Component {
-  constructor(props) {
-    super(props);
+  props: Props;
+  constructor (props: Props) {
+    super(props)
 
     this.state = {
-      buttonColor: this.props.buttonColor || '#007AFF',
+      items: props.options,
+      buttonColor: props.buttonColor || '#007AFF',
       modalVisible: false,
-      selectedOption: this.props.options[0],
-    };
-
-    this.onPressCancel = this.onPressCancel.bind(this);
-    this.onPressSubmit = this.onPressSubmit.bind(this);
-    this.onValueChange = this.onValueChange.bind(this);
+      selectedIndex: 0
+    }
   }
 
-  componentWillReceiveProps(props) {
+  componentWillReceiveProps (props: Props, nextProps: Props) {
     // If options are changing, and our current selected option is not part of
     // the new options, update it.
-    if(
-      props.options
-      && props.options.length > 0
-      && props.options.indexOf(this.state.selectedOption) == -1
+    if (
+      props.options &&
+      props.options.length > 0
     ) {
-      const previousOption = this.state.selectedOption;
       this.setState({
-        selectedOption : props.options[0]
-      }, () => {
-        // Options array changed and the previously selected option is not present anymore.
-        // Should call onSubmit function to tell parent to handle the change too.
-        if(previousOption) {
-          this.onPressSubmit();
-        }
-      });
+        selectedIndex: 0
+      })
     }
   }
 
-  onPressCancel() {
+  onPressCancel = () => {
     this.setState({
-      modalVisible: false,
-    });
+      modalVisible: false
+    })
   }
 
-  onPressSubmit() {
-    if (this.props.onSubmit) {
-      this.props.onSubmit(this.state.selectedOption);
-    }
-
+  onPressSubmit = () => {
+    const item = this.state.items[this.state.selectedIndex]
+    this.props.onSubmit && this.props.onSubmit(item.data || item.value)
     this.setState({
-      modalVisible: false,
-    });
+      modalVisible: false
+    })
   }
 
-  onValueChange(option) {
+  onValueChange = (itemValue: string, itemPosition: number) => {
     this.setState({
-      selectedOption: option,
-    });
+      selectedIndex: itemPosition
+    })
   }
 
-  show() {
+  show () {
     this.setState({
-      modalVisible: true,
-    });
+      modalVisible: true
+    })
   }
 
-  renderItem(option, index) {
-    const label = (this.props.labels) ? this.props.labels[index] : option;
+  renderItem = (option: Option, index: number) => {
+    const {label, value} = option
     return (
-      <PickerItemIOS
-        key={option}
-        value={option}
-        label={label}
-      />
-    );
+      <Item
+        key={value}
+        value={value}
+        label={label}/>
+    )
   }
 
-  render() {
-    const { buttonColor } = this.state;
-    const itemStyle = this.props.itemStyle || {};
+  render () {
+    const { buttonColor } = this.state
+    const itemStyle = this.props.itemStyle || {}
     return (
       <Modal
         animationType={'slide'}
         transparent
-        visible={this.state.modalVisible}
-      >
+        visible={this.state.modalVisible}>
         <View style={styles.basicContainer}>
           <View style={styles.modalContainer}>
             <View style={styles.buttonView}>
@@ -148,33 +131,27 @@ class SimplePicker extends Component {
                   {this.props.cancelText || 'Cancel'}
                 </Text>
               </TouchableOpacity>
-
               <TouchableOpacity onPress={this.onPressSubmit}>
                 <Text style={{ color: buttonColor }}>
                   {this.props.confirmText || 'Confirm'}
                 </Text>
               </TouchableOpacity>
             </View>
-
             <View style={styles.mainBox}>
-              <PickerIOS
+              <Picker
                 ref={'picker'}
                 style={styles.bottomPicker}
-                selectedValue={this.state.selectedOption}
-                onValueChange={(option) => this.onValueChange(option)}
-                itemStyle={itemStyle}
-              >
+                selectedValue={this.props.options[this.state.selectedIndex].value}
+                onValueChange={this.onValueChange}
+                itemStyle={itemStyle}>
                 {this.props.options.map((option, index) => this.renderItem(option, index))}
-              </PickerIOS>
+              </Picker>
             </View>
-
           </View>
         </View>
       </Modal>
-    );
+    )
   }
 }
 
-SimplePicker.propTypes = propTypes;
-
-module.exports = SimplePicker;
+export default SimplePicker
